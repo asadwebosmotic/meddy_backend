@@ -5,6 +5,11 @@ from langchain.chains import LLMChain
 from langchain.prompts import ChatPromptTemplate
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts.chat import MessagesPlaceholder
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 1. Setup Gemini LLM
 llm = ChatGoogleGenerativeAI(
@@ -193,3 +198,16 @@ chat_chain = LLMChain(
     prompt = prompt,
     memory=memory
 )
+
+# ✅ 5. Wrap LLM invoke with retry logic
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(10),
+    retry=retry_if_exception_type((requests.exceptions.RequestException, ValueError)),
+)
+def invoke_with_retry(input_dict: dict):
+    try:
+        return chat_chain.invoke(input_dict)
+    except Exception as e:
+        logger.warning(f"Retryable LLM error: {e}")
+        raise

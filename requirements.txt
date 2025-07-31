@@ -12,3 +12,4 @@ pydantic_settings==2.10.1
 rapidocr-onnxruntime==1.2.3
 llama_parse==0.6.52
 langchain_google_genai==2.1.8
+tenacity==9.1.2

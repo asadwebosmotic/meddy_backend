@@ -24,6 +24,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {"message": "Meddy backend is live!"}
+
 @app.post("/chat/")
 async def chat_with_report(
     file: UploadFile = File(...),

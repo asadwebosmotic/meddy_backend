@@ -61,7 +61,7 @@ async def chat_with_report(
         )
 
         # LLM call (memory handled inside invoke_with_retry)
-        raw_response = invoke_with_retry.invoke({"input": final_input}).get("text", "")
+        raw_response = invoke_with_retry({"input": final_input}).get("text", "")
 
         # 🧹 Strip markdown triple-backticks and parse JSON
         cleaned = re.sub(r"^```json|```$", "", raw_response.strip()).strip()
@@ -114,7 +114,7 @@ async def followup_chat(
             f"Follow-up question from the patient: {user_input}"
         )
 
-        response = invoke_with_retry.invoke({"input": final_prompt})
+        response = invoke_with_retry({"input": final_prompt})
 
         return JSONResponse({
             "status": "success",
@@ -134,7 +134,7 @@ async def health_check():
     try:
         # Optionally, ping chat_chain or memory here if needed
         test_message = "ping"
-        test_response = invoke_with_retry.invoke({"input": test_message})
+        test_response = invoke_with_retry({"input": test_message})
         if test_response and "text" in test_response:
             logger.info("Health check passed: LLM responded successfully.")
             return JSONResponse({

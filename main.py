@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 # sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
+last_report_text = None
 
 app = FastAPI()
 
@@ -34,6 +34,9 @@ async def chat_with_report(
     user_input: str = Form(default='Please explain this report.'),
     medical_history: str = Form("")
 ):
+    
+    global last_report_text
+
     try:
         if not user_input.strip():
             raise HTTPException(status_code=400, detail="User input cannot be empty")
@@ -47,6 +50,8 @@ async def chat_with_report(
         parsed_result = extract(tmp_path)
         report_text = "\n\n".join([page.text for page in parsed_result.pages])
         logger.info("Parsed text from uploaded PDF")
+
+        last_report_text = report_text
 
         try:
             os.remove(tmp_path)
@@ -84,6 +89,66 @@ async def chat_with_report(
             "status": "error",
             "error": str(e)
         }, status_code=500)
+
+@app.post("/cardio_view")
+async def cardio_view():
+    global last_report_text
+
+    try:
+        # Get last parsed report text from memory (set in /chat/)
+        if not last_report_text:
+            raise HTTPException(status_code=400, detail="No report available. Upload a report first.")
+
+        # Specialist prompt for cardiology
+        final_input = f"""
+        You are an expert cardiologist AI assistant.
+        From the following medical report text, extract and summarize ONLY cardiology-relevant findings.
+        
+        Focus on: Lipid profile (cholesterol, LDL, HDL, triglycerides), cardiac enzymes (Troponin, CK-MB, NT-proBNP, Myoglobin), 
+        ECG/Echo parameters (Ejection Fraction, rhythm findings), blood pressure if present, renal markers relevant to cardiac health, 
+        haemoglobin/anemia indicators, inflammatory markers linked to heart risk (CRP, D-Dimer, Homocysteine), 
+        Vitamin D (because of cardiovascular implications).
+
+        Structure your output EXACTLY in this JSON format:
+        ```json
+        {{
+          "greeting": "...",
+          "overview": "...",
+          "abnormalities": "...",
+          "abnormalParameters": [
+            {{ "name": "...", "value": "...", "range": "...", "status": "...", "description": "..." }}
+          ],
+          "patient'sInsights": ["..."],
+          "theGoodNews": "...",
+          "clearNextSteps": "...",
+          "whenToWorry": "...",
+          "meddysTake": "...",
+          "disclaimer": "Please remember I am an AI assistant and not a medical professional..."
+        }}
+        ```
+
+        Medical Report:
+        {last_report_text}
+        """
+
+        raw_response = invoke_with_retry({"input": final_input}).get("text", "")
+
+        # Clean JSON from LLM output
+        cleaned = re.sub(r"^```json|```$", "", raw_response.strip()).strip()
+        try:
+            structured = json.loads(cleaned)
+        except Exception as e:
+            logger.warning(f"Failed to parse LLM output as JSON: {e}")
+            structured = {"unstructured": raw_response}
+
+        return JSONResponse({
+            "status": "success",
+            "structured_data": structured
+        })
+
+    except Exception as e:
+        logger.error(f"Error in cardio_view: {e}")
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
 
 @app.post("/followup/")
 async def followup_chat(

@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 # sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 last_report_text = None
+last_history_text = None
 
 app = FastAPI()
 
@@ -35,7 +36,7 @@ async def chat_with_report(
     medical_history: str = Form("")
 ):
     
-    global last_report_text
+    global last_report_text, last_history_text
 
     try:
         if not user_input.strip():
@@ -65,6 +66,7 @@ async def chat_with_report(
             f"Patient's query: {user_input}"
         )
 
+        last_history_text = medical_history
         # LLM call (memory handled inside invoke_with_retry)
         raw_response = invoke_with_retry({"input": final_input}).get("text", "")
 
@@ -92,46 +94,55 @@ async def chat_with_report(
 
 @app.post("/cardio_view")
 async def cardio_view():
-    global last_report_text
+    global last_report_text, last_history_text
 
     try:
         # Get last parsed report text from memory (set in /chat/)
         if not last_report_text:
             raise HTTPException(status_code=400, detail="No report available. Upload a report first.")
+        
+        # 📝 Build combined input (report + history if exists)
+        combined_input = f"Medical Report:\n{last_report_text}\n\n"
+        if last_history_text:
+            combined_input += f"Patient Medical History:\n{last_history_text}\n\n"
 
         # Specialist prompt for cardiology
-        final_input = f"""
-        You are an expert cardiologist AI assistant.
-        From the following medical report text, extract and summarize ONLY cardiology-relevant findings.
-        
-        Focus on: Lipid profile (cholesterol, LDL, HDL, triglycerides), cardiac enzymes (Troponin, CK-MB, NT-proBNP, Myoglobin), 
-        ECG/Echo parameters (Ejection Fraction, rhythm findings), blood pressure if present, renal markers relevant to cardiac health, 
-        haemoglobin/anemia indicators, inflammatory markers linked to heart risk (CRP, D-Dimer, Homocysteine), 
-        Vitamin D (because of cardiovascular implications).
+        cardio_prompt = f"""
+        You are Meddy, an AI assistant specialized in cardiology.
 
-        Structure your output EXACTLY in this JSON format:
-        ```json
+        Task:
+        - Extract **only cardiology-relevant parameters** (lipid profile, cholesterol, LDL, HDL, triglycerides, VLDL, cardiac enzymes like Troponin, CK-MB, NT-proBNP, electrolytes affecting heart like sodium/potassium, ECG/Echo findings, ejection fraction, hemoglobin/anemia markers, etc.).
+        - Include both **normal and abnormal values**.
+        - Return data strictly in the following JSON structure:
+
         {{
-          "greeting": "...",
-          "overview": "...",
-          "abnormalities": "...",
+          "greeting": "Hello [Patient Name], here is the interpretation of your report from a cardiology perspective.",
+          "overview": "A concise summary of cardiac health from the report.",
+          "abnormalities": "A sentence introducing abnormal findings (if any).",
           "abnormalParameters": [
-            {{ "name": "...", "value": "...", "range": "...", "status": "...", "description": "..." }}
+            {{
+              "name": "Parameter name",
+              "value": "Observed value",
+              "range": "Reference range",
+              "status": "high/low/normal",
+              "description": "Cardiology-specific explanation."
+            }}
           ],
-          "patient'sInsights": ["..."],
-          "theGoodNews": "...",
-          "clearNextSteps": "...",
-          "whenToWorry": "...",
-          "meddysTake": "...",
-          "disclaimer": "Please remember I am an AI assistant and not a medical professional..."
+          "patient'sInsights": [
+            "Bullet point insights explained simply for the patient."
+          ],
+          "theGoodNews": "Positive cardiac-related findings (normal values).",
+          "clearNextSteps": "Actionable suggestions to improve/maintain cardiac health.",
+          "whenToWorry": "Red flag symptoms or when immediate consultation is required.",
+          "meddysTake": "Friendly encouraging comment from Meddy.",
+          "disclaimer": "Please Remember I am an AI assistant and not a medical professional. This summary is for informational purposes only and is not a substitute for professional medical advice, diagnosis or treatment."
         }}
-        ```
 
-        Medical Report:
-        {last_report_text}
+        Medical Report + History (extract only cardiac-relevant info):
+        {combined_input}
         """
 
-        raw_response = invoke_with_retry({"input": final_input}).get("text", "")
+        raw_response = invoke_with_retry({"input": cardio_prompt}).get("text", "")
 
         # Clean JSON from LLM output
         cleaned = re.sub(r"^```json|```$", "", raw_response.strip()).strip()

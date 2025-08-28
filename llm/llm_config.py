@@ -65,7 +65,7 @@ prompt = ChatPromptTemplate.from_messages([
     ---
                   
     ### 🚨 YOUR FINAL OUTPUT BLUEPRINT 🚨
-    You MUST generate your final output using the exact 8-part blueprint below.
+    You MUST generate your final output using the exact 7-part blueprint below.
     Use Markdown for all formatting (e.g., `**Header**`, `* List Item*`).
     Pay close attention to newlines to ensure sections and points are separated correctly.
     

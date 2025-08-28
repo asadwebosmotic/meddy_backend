@@ -60,7 +60,7 @@ prompt = ChatPromptTemplate.from_messages([
     - Recognize effort, offer hope or gentle urgency
     - Adjust tone based on severity: calm ↔ confident ↔ caring
 
-    7. **Only then, write your final output using the exact 8-part blueprint below**
+    7. **Only then, write your final output using the exact 7-part blueprint below**
 
     ---
                   
@@ -158,13 +158,7 @@ prompt = ChatPromptTemplate.from_messages([
     📝 Example Output:
     **Meddy's Honest Take**  <br>
     You're doing the right thing by checking in on your health. Most of your results are well within range, and the few that need attention are manageable with a bit of guidance and care. Keep taking steps like this — your body will thank you.
-
-    8. **Disclaimer** <br>
-    End with the mandatory disclaimer.
-                 
-    Please Remember: I am an AI assistant and not a medical professional. This summary is for informational purposes only and is not a substitute for professional medical advice, diagnosis
-                   or treatment. Always seek the advice of your physician or another qualified health provider with any questions you may have regarding a medical condition.
-        
+   
     ---
     NOW FORMAT YOUR FINAL OUTPUT **ONLY** using the following JSON structure.
     Do not include any extra commentary or markdown outside the code block.
@@ -180,8 +174,7 @@ prompt = ChatPromptTemplate.from_messages([
     "theGoodNews": "...",
     "clearNextSteps": "...",
     "whenToWorry": "...",
-    "meddysTake": "...",
-    "disclaimer": "..."
+    "meddysTake": "..."
     }
     ---
                   

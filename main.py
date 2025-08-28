@@ -113,6 +113,16 @@ async def cardio_view():
         Task:
         - Extract **only cardiology-relevant parameters** (lipid profile, cholesterol, LDL, HDL, triglycerides, VLDL, cardiac enzymes like Troponin, CK-MB, NT-proBNP, electrolytes affecting heart like sodium/potassium, ECG/Echo findings, ejection fraction, hemoglobin/anemia markers, etc.).
         - Include both **normal and abnormal values**.
+        - If **no cardiology-relevant parameters** are present in the report, return the JSON with:
+            - greeting (with patient name if available)
+            - overview: "No cardiology-relevant parameters were found in this report."
+            - abnormalities: "None detected."
+            - abnormalParameters: []  (empty array)
+            - patient'sInsights: []  (empty array)
+            - theGoodNews: "Your report does not show any cardiology-related concerns."
+            - clearNextSteps: "No cardiac-specific action needed based on this report. Please continue routine check-ups as advised by your physician."
+            - whenToWorry: "No immediate concerns related to heart health from this report."
+            - meddysTake: "Great news! This report doesn’t flag any heart-related issues."
         - Return data strictly in the following JSON structure:
 
         {{
@@ -134,8 +144,7 @@ async def cardio_view():
           "theGoodNews": "Positive cardiac-related findings (normal values).",
           "clearNextSteps": "Actionable suggestions to improve/maintain cardiac health.",
           "whenToWorry": "Red flag symptoms or when immediate consultation is required.",
-          "meddysTake": "Friendly encouraging comment from Meddy.",
-          "disclaimer": "Please Remember I am an AI assistant and not a medical professional. This summary is for informational purposes only and is not a substitute for professional medical advice, diagnosis or treatment."
+          "meddysTake": "Friendly encouraging comment from Meddy."
         }}
 
         Medical Report + History (extract only cardiac-relevant info):

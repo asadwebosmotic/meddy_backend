@@ -110,9 +110,15 @@ async def cardio_view():
         cardio_prompt = f"""
         You are Meddy, an AI assistant specialized in cardiology.
 
+        **CRITICAL FIRST STEP: Check for Cardiac Relevance**
+        Before analyzing, you MUST first determine if this report contains ANY cardiology-relevant parameters:
+        - **Blood Tests**: Lipid profile, cholesterol, LDL, HDL, triglycerides, VLDL, cardiac enzymes (Troponin, CK-MB, NT-proBNP), electrolytes affecting heart (sodium/potassium), hemoglobin/anemia markers, etc.
+        - **Imaging**: ECG, Echo, cardiac MRI, stress tests, etc.
+        - **Specialized**: Heart rate, blood pressure, cardiac function tests, etc.
+
         Task:
-        - Extract **only cardiology-relevant parameters** (lipid profile, cholesterol, LDL, HDL, triglycerides, VLDL, cardiac enzymes like Troponin, CK-MB, NT-proBNP, electrolytes affecting heart like sodium/potassium, ECG/Echo findings, ejection fraction, hemoglobin/anemia markers, etc.).
-        - Include both **normal and abnormal values**.
+        - Extract **only cardiology-relevant parameters** from the report
+        - Include both **normal and abnormal values**
         - If **no cardiology-relevant parameters** are present in the report, return the JSON with:
             - greeting (with patient name if available)
             - overview: "No cardiology-relevant parameters were found in this report."
